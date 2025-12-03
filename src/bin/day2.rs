@@ -22,7 +22,7 @@ fn part1(ranges: &[RangeInclusive<u64>]) -> u64 {
     ranges
         .iter()
         .flat_map(|range| {
-            range.clone().into_iter().filter(|x| {
+            range.clone().filter(|x| {
                 let divider = 10_u64.pow((x.nbr_decimal_digits() / 2) as u32);
                 x / divider == x % divider
             })
@@ -34,7 +34,7 @@ fn part2(ranges: &[RangeInclusive<u64>]) -> u64 {
     ranges
         .iter()
         .flat_map(|range| {
-            range.clone().into_iter().filter(|x| {
+            range.clone().filter(|x| {
                 let l = x.nbr_decimal_digits();
                 // Retain only lengths that evenly divide the number.
                 (1..=l / 2).filter(|size| l % size == 0).any(|size| {
