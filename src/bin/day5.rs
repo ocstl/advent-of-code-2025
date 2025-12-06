@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        let (available_ingredients, fresh_ingredients) = parse_input(INPUT);
+        let (available_ingredients, _) = parse_input(INPUT);
         let result = part2(&available_ingredients);
 
         const EXPECTED: u64 = 14;
