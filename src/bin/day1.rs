@@ -3,8 +3,6 @@ use std::num::ParseIntError;
 use std::str::FromStr;
 
 const INPUT: &str = "./inputs/day1.txt";
-const SLOTS: i32 = 100;
-const DIAL_START: i32 = 50;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Instruction {
@@ -24,49 +22,67 @@ impl FromStr for Instruction {
     }
 }
 
-fn read_instructions(input: &str) -> Result<Vec<Instruction>, ParseIntError> {
-    input.lines().map(str::parse).collect()
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Dial {
+    state: i32,
+}
+
+impl Dial {
+    const INITIAL_STATE: i32 = 50;
+    const SLOTS: i32 = 100;
+
+    fn turn(&mut self, instruction: Instruction) -> i32 {
+        match instruction {
+            Instruction::Left(x) => {
+                // When using `div_euclid`, we have to be careful.
+                // If we were already at 0, the click was counted previously, so we remove it.
+                // If we are now at 0, that click is not counted by the division, so we include it.
+                let clicks = if self.state == 0 { -1 } else { 0 };
+                let new_state = self.state - x;
+                self.state = new_state.rem_euclid(Self::SLOTS);
+                clicks
+                    + new_state.div_euclid(Self::SLOTS).abs()
+                    + if self.state == 0 { 1 } else { 0 }
+            }
+            Instruction::Right(x) => {
+                let new_state = self.state + x;
+                self.state = new_state.rem_euclid(Self::SLOTS);
+                new_state.div_euclid(Self::SLOTS)
+            }
+        }
+    }
+}
+
+impl Default for Dial {
+    fn default() -> Self {
+        Self {
+            state: Self::INITIAL_STATE,
+        }
+    }
 }
 
 fn part1(instructions: &[Instruction]) -> i32 {
     instructions
         .iter()
-        .scan(DIAL_START, |state, instruction| {
-            match instruction {
-                Instruction::Right(val) => *state = (*state + val).rem_euclid(SLOTS),
-                Instruction::Left(val) => *state = (*state - val).rem_euclid(SLOTS),
-            }
-            Some(*state)
+        .scan(Dial::default(), |dial, &instruction| {
+            dial.turn(instruction);
+            Some(dial.state)
         })
-        .filter(|dial| *dial == 0)
+        .filter(|&dial| dial == 0)
         .count() as i32
 }
 
 fn part2(instructions: &[Instruction]) -> i32 {
     instructions
         .iter()
-        .fold((DIAL_START, 0), |state, instruction| {
-            match instruction {
-                Instruction::Right(val) => {
-                    let dial = state.0 + val;
-                    let clicks = state.1 + dial / SLOTS;
-                    (dial % SLOTS, clicks)
-                }
-                Instruction::Left(val) => {
-                    let dial = state.0 - val;
-                    let clicks = state.1 + dial.div_euclid(SLOTS).abs();
-
-                    // We need to adjust for two cases when turning left:
-                    //  - if we were already at 0, we have already counted that click;
-                    //  - if we are at 0, we need to count that click.
-                    let dial = dial.rem_euclid(SLOTS);
-                    let clicks =
-                        clicks - if state.0 == 0 { 1 } else { 0 } + if dial == 0 { 1 } else { 0 };
-                    (dial, clicks)
-                }
-            }
+        .scan(Dial::default(), |dial, &instruction| {
+            Some(dial.turn(instruction))
         })
-        .1
+        .sum()
+}
+
+fn read_instructions(input: &str) -> Result<Vec<Instruction>, ParseIntError> {
+    input.lines().map(str::parse).collect()
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
