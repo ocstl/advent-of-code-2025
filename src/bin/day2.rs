@@ -36,20 +36,11 @@ fn part2(ranges: &[RangeInclusive<u64>]) -> u64 {
         .flat_map(|range| {
             range.clone().filter(|x| {
                 let l = x.nbr_decimal_digits();
-                // Retain only lengths that evenly divide the number.
+                // Use only lengths that evenly divide the sequence.
                 (1..=l / 2).filter(|size| l % size == 0).any(|size| {
-                    // Use the divider to break the number in equal-sized pieces, then compare
-                    // each new piece with the first one.
-                    let divider = 10_u64.pow(size as u32);
-                    let initial = x % divider;
-                    let mut remainder = x / divider;
-                    while remainder > 0 {
-                        if remainder % divider != initial {
-                            return false;
-                        }
-                        remainder /= divider;
-                    }
-                    true
+                    let mut digits = x.into_digits(10_u64.pow(size as u32)).unwrap();
+                    let first = digits.next().unwrap();
+                    digits.all(|other| other == first)
                 })
             })
         })
