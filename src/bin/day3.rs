@@ -8,18 +8,24 @@ struct Bank(Vec<u64>);
 
 impl Bank {
     fn maximum_joltage(&self, nbr_batteries: usize) -> u64 {
+        // We want the leftmost maximum joltage, but also to keep enough batteries on the right
+        // to have the required number of batteries.
         let mut joltage = 0;
-        let mut current_battery = 0;
+        let mut available_batteries: &[u64] = self.0.as_ref();
 
+        // Since `max` retains the last element that is the maximum, we use a reverse iterator.
+        // Also, skip the number of batteries we need on the right.
+        // We can then use the index to restrict the slice.
         for battery in 1..=nbr_batteries {
-            let (idx, j) = self.0[current_battery..self.0.len() - (nbr_batteries - battery)]
+            let (idx, j) = available_batteries
                 .iter()
                 .enumerate()
                 .rev()
+                .skip(nbr_batteries - battery)
                 .max_by_key(|&(_, joltage)| joltage)
                 .unwrap();
-            joltage = 10 * joltage + j;
-            current_battery += idx + 1;
+            joltage = joltage * 10 + j;
+            available_batteries = &available_batteries[idx + 1..];
         }
 
         joltage
