@@ -3,36 +3,19 @@ use std::error::Error;
 use std::str::FromStr;
 
 const INPUT: &str = "./inputs/day4.txt";
+const PAPER_ROLL: char = '@';
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum Tile {
-    Empty,
-    Paper,
-}
-
-impl TryFrom<char> for Tile {
-    type Error = char;
-
-    fn try_from(value: char) -> Result<Self, Self::Error> {
-        match value {
-            '.' => Ok(Tile::Empty),
-            '@' => Ok(Tile::Paper),
-            _ => Err(value),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct PrintingDepartment(Grid<Tile>);
+#[derive(Debug, Clone)]
+struct PrintingDepartment(Grid<bool>);
 
 impl PrintingDepartment {
-    fn removable_paper_rolls(&self) -> impl Iterator<Item = Position> {
+    fn removable_rolls(&self) -> impl Iterator<Item = Position> {
         self.0.iter().filter_map(|(position, tile)| {
-            if *tile == Tile::Paper
+            if *tile
                 && position
                     .extended_neighbours()
                     .filter_map(|neighbour| self.0.get(neighbour))
-                    .filter(|&&t| t == Tile::Paper)
+                    .filter(|tile| **tile)
                     .count()
                     < 4
             {
@@ -41,6 +24,12 @@ impl PrintingDepartment {
                 None
             }
         })
+    }
+
+    fn remove_rolls(&mut self, positions: impl Iterator<Item = Position>) {
+        for p in positions {
+            *self.0.get_mut(p).unwrap() = false;
+        }
     }
 }
 
@@ -53,33 +42,28 @@ impl FromStr for PrintingDepartment {
         let grid = s
             .lines()
             .flat_map(|line| line.chars())
-            .map(Tile::try_from)
-            .collect::<Result<Vec<Tile>, _>>()?;
+            .map(|t| t == PAPER_ROLL)
+            .collect();
 
         Ok(Self(Grid::new(height, width, grid).unwrap()))
     }
 }
 
-fn part1(department: &PrintingDepartment) -> usize {
-    department.removable_paper_rolls().count()
+fn part1(printing_department: &PrintingDepartment) -> usize {
+    printing_department.removable_rolls().count()
 }
 
-fn part2(department: &PrintingDepartment) -> usize {
-    let mut department = department.clone();
+fn part2(printing_department: &PrintingDepartment) -> usize {
+    let mut printing_department = printing_department.clone();
     std::iter::from_fn(move || {
-        let removable: Vec<Position> = department.removable_paper_rolls().collect();
+        let removable: Vec<Position> = printing_department.removable_rolls().collect();
         if removable.is_empty() {
             return None;
         }
 
-        let count = removable.len();
-        for position in removable {
-            if let Some(tile) = department.0.get_mut(position) {
-                *tile = Tile::Empty;
-            }
-        }
-
-        Some(count)
+        let n = removable.len();
+        printing_department.remove_rolls(removable.into_iter());
+        Some(n)
     })
     .sum()
 }
