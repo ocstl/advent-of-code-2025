@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-petgraph = "0.8.3"
+good_lp = { version = "1.15.3", features = ["microlp"] }
 radixal = "0.3.0"
